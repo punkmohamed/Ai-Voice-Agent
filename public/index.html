@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>AI Voice Agent</title>
+	<script src="https://cdn.tailwindcss.com"></script>
+	<script src="/script.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+	<div class="container mx-auto px-4 py-8">
+		<div class="bg-white rounded-lg shadow-lg p-6 max-w-2xl mx-auto" id="mainContainer">
+			<h1 class="text-3xl font-bold text-gray-800 mb-4" id="mainTitle">AI Voice Assistant</h1>
+			<p class="text-gray-600 mb-6" id="mainDescription">Talk with an AI assistant using your voice</p>
+
+			<!-- Main controls -->
+			<div class="flex flex-wrap gap-2 mb-6">
+				<button id="startConversation" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300">Start Conversation</button>
+				<button id="toggleCustomization" class="bg-purple-500 hover:bg-purple-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300">Customize UI</button>
+			</div>
+
+			<!-- Customization panel (hidden by default) -->
+			<div id="customizationPanel" class="bg-gray-100 p-4 rounded-lg mb-6 hidden">
+				<h2 class="text-lg font-semibold mb-3">Customize Interface</h2>
+
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+					<!-- Background color -->
+					<div>
+						<label class="block text-sm font-medium mb-1">Background Color</label>
+						<div class="flex gap-2">
+							<input type="color" id="bgColorPicker" class="h-8 w-10 cursor-pointer" value="#ffffff">
+							<button data-color="#ffffff" class="bg-white border border-gray-300 h-8 w-8 rounded"></button>
+							<button data-color="#f0f9ff" class="bg-blue-50 h-8 w-8 rounded"></button>
+							<button data-color="#f0fdf4" class="bg-green-50 h-8 w-8 rounded"></button>
+							<button data-color="#fdf2f8" class="bg-pink-50 h-8 w-8 rounded"></button>
+						</div>
+					</div>
+
+					<!-- Text color -->
+					<div>
+						<label class="block text-sm font-medium mb-1">Text Color</label>
+						<div class="flex gap-2">
+							<input type="color" id="textColorPicker" class="h-8 w-10 cursor-pointer" value="#1f2937">
+							<button data-color="#1f2937" class="bg-gray-800 h-8 w-8 rounded"></button>
+							<button data-color="#1e40af" class="bg-blue-800 h-8 w-8 rounded"></button>
+							<button data-color="#166534" class="bg-green-800 h-8 w-8 rounded"></button>
+							<button data-color="#9d174d" class="bg-pink-800 h-8 w-8 rounded"></button>
+						</div>
+					</div>
+
+					<!-- Button color -->
+					<div>
+						<label class="block text-sm font-medium mb-1">Button Color</label>
+						<div class="flex gap-2">
+							<button data-color="blue" class="bg-blue-500 h-8 w-8 rounded"></button>
+							<button data-color="green" class="bg-green-500 h-8 w-8 rounded"></button>
+							<button data-color="purple" class="bg-purple-500 h-8 w-8 rounded"></button>
+							<button data-color="red" class="bg-red-500 h-8 w-8 rounded"></button>
+							<button data-color="yellow" class="bg-yellow-500 h-8 w-8 rounded"></button>
+						</div>
+					</div>
+
+					<!-- Text size -->
+					<div>
+						<label class="block text-sm font-medium mb-1">Text Size</label>
+						<div class="flex gap-2">
+							<button data-size="small" class="border border-gray-300 px-2 py-1 rounded text-xs">Small</button>
+							<button data-size="medium" class="border border-gray-300 px-2 py-1 rounded text-sm">Medium</button>
+							<button data-size="large" class="border border-gray-300 px-2 py-1 rounded">Large</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div id="status" class="mt-4 text-sm text-gray-500 font-medium"></div>
+			<div id="conversation" class="mt-6"></div>
+			<p class="text-xs text-gray-500 mt-4">Speak into your microphone after connecting to chat with the AI assistant. You can ask the AI to change colors and text size.</p>
+		</div>
+	</div>
+</body>
+</html>
