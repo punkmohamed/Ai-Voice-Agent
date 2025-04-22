@@ -5,37 +5,98 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>AI Voice Agent</title>
 	<script src="https://cdn.tailwindcss.com"></script>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 	<script src="/script.js"></script>
+	<style>
+		@keyframes pulse {
+			0%, 100% { transform: scale(1); opacity: 1; }
+			50% { transform: scale(1.1); opacity: 0.8; }
+		}
+		.animate-pulse-custom {
+			animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+		}
+		.message-bubble {
+			position: relative;
+			transition: all 0.3s ease;
+		}
+		.message-bubble:hover {
+			transform: translateY(-2px);
+		}
+		.message-bubble::before {
+			content: '';
+			position: absolute;
+			width: 0;
+			height: 0;
+			border-style: solid;
+		}
+		.user-message::before {
+			right: -10px;
+			bottom: 15px;
+			border-width: 10px 0 10px 10px;
+			border-color: transparent transparent transparent #dbeafe;
+		}
+		.ai-message::before {
+			left: -10px;
+			bottom: 15px;
+			border-width: 10px 10px 10px 0;
+			border-color: transparent #f3f4f6 transparent transparent;
+		}
+	</style>
 </head>
-<body class="bg-gray-100 min-h-screen">
-	<div class="container mx-auto px-4 py-8">
-		<div class="bg-white rounded-lg shadow-lg p-6 max-w-2xl mx-auto" id="mainContainer">
-			<h1 class="text-3xl font-bold text-gray-800 mb-4" id="mainTitle">AI Voice Assistant</h1>
-			<p class="text-gray-600 mb-6" id="mainDescription">Talk with an AI assistant using your voice</p>
-
-			<!-- Main controls -->
-			<div class="flex flex-wrap gap-2 mb-6">
-				<button id="startConversation" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300">Start Conversation</button>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-50 min-h-screen">
+	<div class="container mx-auto px-4 py-8 max-w-7xl">
+		<div class="bg-white rounded-2xl shadow-xl p-8 mx-auto" id="mainContainer">
+			<!-- Header with icon -->
+			<div class="flex items-center justify-center mb-10">
+				<div class="bg-blue-500 rounded-full p-4 mr-6">
+					<i class="fas fa-microphone text-white text-3xl"></i>
+				</div>
+				<div>
+					<h1 class="text-3xl font-bold text-gray-800 mb-1" id="mainTitle">AI Voice Assistant</h1>
+					<p class="text-gray-600" id="mainDescription">Talk with an AI assistant using your voice</p>
+				</div>
 			</div>
 
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+			<!-- Main controls -->
+			<div class="flex flex-wrap gap-2 mb-6 justify-center">
+				<button id="startConversation" class="group bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg flex items-center space-x-2">
+					<i class="fas fa-play-circle"></i>
+					<span>Start Conversation</span>
+				</button>
+			</div>
+
+			<!-- Microphone Status Indicator -->
+			<div id="micStatus" class="flex items-center justify-center mb-4 space-x-2">
+				<div class="w-3 h-3 rounded-full bg-gray-300"></div>
+				<span class="text-sm text-gray-500">Microphone inactive</span>
+			</div>
+
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 				<!-- Conversation Area -->
-				<div>
-					<h2 class="text-lg font-semibold mb-2">Live Conversation</h2>
+				<div class="bg-gray-50 rounded-xl p-4 shadow-inner">
+					<h2 class="text-lg font-semibold mb-2 flex items-center">
+						<i class="fas fa-comments text-blue-500 mr-2"></i>
+						Live Conversation
+					</h2>
 					<div id="status" class="mt-2 text-sm text-gray-500 font-medium"></div>
-					<div id="conversation" class="mt-2 border border-gray-200 rounded-lg p-4 h-[400px] overflow-y-auto"></div>
+					<div id="conversation" class="mt-2 border border-gray-200 rounded-lg p-4 h-[400px] overflow-y-auto bg-white">
+						<!-- Messages will be added here -->
+					</div>
 				</div>
 
 				<!-- Message Log Area -->
-				<div>
-					<h2 class="text-lg font-semibold mb-2">Message Log</h2>
-					<div id="messageLog" class="mt-2 border border-gray-200 rounded-lg p-4 h-[400px] overflow-y-auto">
+				<div class="bg-gray-50 rounded-xl p-4 shadow-inner">
+					<h2 class="text-lg font-semibold mb-2 flex items-center">
+						<i class="fas fa-history text-blue-500 mr-2"></i>
+						Message Log
+					</h2>
+					<div id="messageLog" class="mt-2 border border-gray-200 rounded-lg p-4 h-[400px] overflow-y-auto bg-white">
 						<table class="w-full text-sm">
 							<thead>
 								<tr class="border-b">
-									<th class="text-left p-2">Time</th>
-									<th class="text-left p-2">Type</th>
-									<th class="text-left p-2">Message</th>
+									<th class="text-left p-2 text-gray-600">Time</th>
+									<th class="text-left p-2 text-gray-600">Type</th>
+									<th class="text-left p-2 text-gray-600">Message</th>
 								</tr>
 							</thead>
 							<tbody id="logTableBody"></tbody>
@@ -44,7 +105,12 @@
 				</div>
 			</div>
 
-			<p class="text-xs text-gray-500 mt-4">Speak into your microphone after connecting to chat with the AI assistant.</p>
+			<div class="mt-6 text-center">
+				<p class="text-sm text-gray-500 flex items-center justify-center">
+					<i class="fas fa-info-circle mr-2"></i>
+					Speak into your microphone after connecting to chat with the AI assistant
+				</p>
+			</div>
 		</div>
 	</div>
 </body>

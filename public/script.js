@@ -5,17 +5,27 @@ document.addEventListener('DOMContentLoaded', () => {
 	const conversationDiv = document.getElementById('conversation');
 	const mainContainer = document.getElementById('mainContainer');
 	const logTableBody = document.getElementById('logTableBody');
+	const micStatus = document.getElementById('micStatus');
+	const micStatusDot = micStatus.querySelector('div');
+	const micStatusText = micStatus.querySelector('span');
 
 	// WebRTC variables
 	let peerConnection;
 	let dataChannel;
 
+	// Update microphone status
+	function updateMicStatus(isActive, statusText) {
+		micStatusDot.className = `w-3 h-3 rounded-full ${isActive ? 'bg-green-500 animate-pulse-custom' : 'bg-gray-300'}`;
+		micStatusText.textContent = statusText;
+		micStatusText.className = `text-sm ${isActive ? 'text-green-500' : 'text-gray-500'}`;
+	}
+
 	// Add message to log
 	function addToLog(type, message) {
-		if (!message || message.trim() === '') return; // Don't log empty messages
+		if (!message || message.trim() === '') return;
 		
 		const row = document.createElement('tr');
-		row.className = 'border-b hover:bg-gray-50';
+		row.className = 'border-b hover:bg-gray-50 transition-colors duration-200';
 		
 		const time = new Date().toLocaleTimeString();
 		const typeClass = type === 'User' ? 'text-blue-600' : 'text-green-600';
@@ -32,19 +42,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	// Create a message element to add to the conversation
 	function addMessage(text, isUser = false) {
-		if (!text || text.trim() === '') return; // Don't add empty messages
+		if (!text || text.trim() === '') return;
 		
 		const messageEl = document.createElement('div');
 		messageEl.className = isUser
-			? 'bg-blue-100 p-3 rounded-lg ml-auto max-w-[80%]'
-			: 'bg-gray-100 p-3 rounded-lg max-w-[80%]';
-		messageEl.textContent = text;
+			? 'message-bubble user-message bg-blue-100 p-3 rounded-lg ml-auto max-w-[80%] mb-4 shadow-sm'
+			: 'message-bubble ai-message bg-gray-100 p-3 rounded-lg max-w-[80%] mb-4 shadow-sm';
+		
+		const iconEl = document.createElement('i');
+		iconEl.className = isUser 
+			? 'fas fa-user text-blue-500 mb-2' 
+			: 'fas fa-robot text-gray-500 mb-2';
+		
+		const textEl = document.createElement('div');
+		textEl.className = 'mt-1';
+		textEl.textContent = text;
+		
+		messageEl.appendChild(iconEl);
+		messageEl.appendChild(textEl);
 		conversationDiv.appendChild(messageEl);
-		conversationDiv.scrollTop = conversationDiv.scrollHeight;
+		
+		// Smooth scroll to bottom
+		messageEl.scrollIntoView({ behavior: 'smooth', block: 'end' });
 	}
 
 	// Initialize WebRTC connection
 	function initializeConnection() {
+		updateMicStatus(false, 'Connecting...');
+		startButton.disabled = true;
+		startButton.classList.add('opacity-50');
+
 		// Create a WebRTC connection
 		peerConnection = new RTCPeerConnection();
 
@@ -71,6 +98,8 @@ document.addEventListener('DOMContentLoaded', () => {
 			};
 			dataChannel.send(JSON.stringify(event));
 			statusDiv.textContent = 'Connected! You can speak now.';
+			updateMicStatus(true, 'Microphone active');
+			startButton.innerHTML = '<i class="fas fa-check-circle"></i><span>Connected</span>';
 			const greeting = 'Hello! How can I help you today?';
 			addMessage(greeting, false);
 			addToLog('AI', greeting);
@@ -136,6 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
 					if (msg.type === 'transcript.partial') {
 						statusDiv.textContent = 'Listening...';
 						statusDiv.className = 'mt-4 text-sm text-blue-500 font-medium animate-pulse';
+						updateMicStatus(true, 'Listening...');
 						
 						// Update existing message or create new one for partial
 						const userMessageId = `user-${msg.transcript_id}`;
@@ -144,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
 						if (!userMessage) {
 							userMessage = document.createElement('div');
 							userMessage.id = userMessageId;
-							userMessage.className = 'bg-blue-100 p-3 rounded-lg ml-auto max-w-[80%] mb-2';
+							userMessage.className = 'message-bubble user-message bg-blue-100 p-3 rounded-lg ml-auto max-w-[80%] mb-4 shadow-sm';
 							conversationDiv.appendChild(userMessage);
 						}
 
@@ -153,6 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
 					} else if (msg.type === 'transcript.complete') {
 						statusDiv.textContent = 'Connected! You can speak now.';
 						statusDiv.className = 'mt-4 text-sm text-gray-500 font-medium';
+						updateMicStatus(true, 'Microphone active');
 						
 						// Only log if it's a new message (avoid duplicates)
 						if (userText !== lastUserMessage) {
@@ -218,31 +249,65 @@ document.addEventListener('DOMContentLoaded', () => {
 								})
 								.catch(error => {
 									console.error('Error connecting to OpenAI:', error);
-									statusDiv.textContent = 'Error connecting to AI service. Please try again.';
+									updateMicStatus(false, 'Connection error');
+									statusDiv.textContent = 'Error: Could not establish connection';
+									statusDiv.className = 'mt-4 text-sm text-red-500 font-medium';
 									// Re-enable the button so user can try again
 									startButton.disabled = false;
-									startButton.classList.remove('bg-gray-400');
+									startButton.classList.remove('opacity-50');
 									startButton.classList.add('bg-blue-500', 'hover:bg-blue-600');
 								});
 							})
 							.catch(error => {
 								console.error('Error getting session:', error);
-								statusDiv.textContent = 'Error starting session. Please check console for details.';
+								updateMicStatus(false, 'Connection error');
+								statusDiv.textContent = 'Error: Could not establish connection';
+								statusDiv.className = 'mt-4 text-sm text-red-500 font-medium';
 								// Re-enable the button so user can try again
 								startButton.disabled = false;
-								startButton.classList.remove('bg-gray-400');
+								startButton.classList.remove('opacity-50');
 								startButton.classList.add('bg-blue-500', 'hover:bg-blue-600');
 							});
 					})
 					.catch(error => {
 						console.error('Error creating offer:', error);
-						statusDiv.textContent = 'Error setting up connection. Please try again.';
+						updateMicStatus(false, 'Connection error');
+						statusDiv.textContent = 'Error: Could not establish connection';
+						statusDiv.className = 'mt-4 text-sm text-red-500 font-medium';
 					});
 			})
 			.catch(error => {
 				console.error('Error accessing microphone:', error);
-				statusDiv.textContent = 'Error accessing microphone. Please check permissions and try again.';
+				updateMicStatus(false, 'Connection error');
+				statusDiv.textContent = 'Error: Could not establish connection';
+				statusDiv.className = 'mt-4 text-sm text-red-500 font-medium';
 			});
+
+		// Error handling
+		peerConnection.onerror = (error) => {
+			console.error('WebRTC error:', error);
+			updateMicStatus(false, 'Connection error');
+			statusDiv.textContent = 'Error: Could not establish connection';
+			statusDiv.className = 'mt-4 text-sm text-red-500 font-medium';
+		};
+
+		// Handle connection state changes
+		peerConnection.onconnectionstatechange = (event) => {
+			console.log('Connection state:', peerConnection.connectionState);
+			switch(peerConnection.connectionState) {
+				case 'disconnected':
+				case 'failed':
+					updateMicStatus(false, 'Disconnected');
+					statusDiv.textContent = 'Connection lost. Please try again.';
+					startButton.disabled = false;
+					startButton.classList.remove('opacity-50');
+					startButton.innerHTML = '<i class="fas fa-play-circle"></i><span>Start Conversation</span>';
+					break;
+				case 'connecting':
+					updateMicStatus(false, 'Connecting...');
+					break;
+			}
+		};
 	}
 
 	// Start conversation button click handler
