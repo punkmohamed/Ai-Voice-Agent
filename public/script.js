@@ -1,129 +1,39 @@
 document.addEventListener('DOMContentLoaded', () => {
 	// UI Elements
 	const startButton = document.getElementById('startConversation');
-	const toggleCustomizationButton = document.getElementById('toggleCustomization');
-	const customizationPanel = document.getElementById('customizationPanel');
 	const statusDiv = document.getElementById('status');
 	const conversationDiv = document.getElementById('conversation');
 	const mainContainer = document.getElementById('mainContainer');
-	const mainTitle = document.getElementById('mainTitle');
-	const mainDescription = document.getElementById('mainDescription');
-	const bgColorPicker = document.getElementById('bgColorPicker');
-	const textColorPicker = document.getElementById('textColorPicker');
+	const logTableBody = document.getElementById('logTableBody');
 
 	// WebRTC variables
 	let peerConnection;
 	let dataChannel;
 
-	// Customization functions
-	function applyBackgroundColor(color) {
-		mainContainer.style.backgroundColor = color;
-		return { success: true, color };
+	// Add message to log
+	function addToLog(type, message) {
+		if (!message || message.trim() === '') return; // Don't log empty messages
+		
+		const row = document.createElement('tr');
+		row.className = 'border-b hover:bg-gray-50';
+		
+		const time = new Date().toLocaleTimeString();
+		const typeClass = type === 'User' ? 'text-blue-600' : 'text-green-600';
+		
+		row.innerHTML = `
+			<td class="p-2">${time}</td>
+			<td class="p-2"><span class="${typeClass} font-medium">${type}</span></td>
+			<td class="p-2">${message}</td>
+		`;
+		
+		logTableBody.appendChild(row);
+		row.scrollIntoView({ behavior: 'smooth', block: 'end' });
 	}
-
-	function applyTextColor(color) {
-		mainContainer.style.color = color;
-		mainTitle.style.color = color;
-		mainDescription.style.color = color;
-		return { success: true, color };
-	}
-
-	function applyButtonColor(colorName) {
-		const colorClasses = {
-			blue: ['bg-blue-500', 'hover:bg-blue-600'],
-			green: ['bg-green-500', 'hover:bg-green-600'],
-			purple: ['bg-purple-500', 'hover:bg-purple-600'],
-			red: ['bg-red-500', 'hover:bg-red-600'],
-			yellow: ['bg-yellow-500', 'hover:bg-yellow-600']
-		};
-
-		if (!colorClasses[colorName]) return { success: false, error: 'Invalid color name' };
-
-		// Remove all color classes from buttons
-		const allColorClasses = Object.values(colorClasses).flat();
-		startButton.classList.remove(...allColorClasses);
-		toggleCustomizationButton.classList.remove(...allColorClasses);
-
-		// Add new color classes
-		startButton.classList.add(...colorClasses[colorName]);
-		toggleCustomizationButton.classList.add(...colorClasses[colorName]);
-
-		return { success: true, colorName };
-	}
-
-	function applyTextSize(size) {
-		const sizeClasses = {
-			small: ['text-sm', 'text-xs', 'text-lg'],
-			medium: ['text-base', 'text-sm', 'text-xl'],
-			large: ['text-lg', 'text-base', 'text-2xl']
-		};
-
-		if (!sizeClasses[size]) return { success: false, error: 'Invalid size' };
-
-		// Remove all size classes
-		const allSizeClasses = Object.values(sizeClasses).flat();
-		mainContainer.classList.remove(...allSizeClasses);
-
-		// Add new size class
-		mainContainer.classList.add(sizeClasses[size][0]);
-		mainDescription.classList.remove('text-sm', 'text-base', 'text-lg');
-		mainDescription.classList.add(sizeClasses[size][1]);
-		mainTitle.classList.remove('text-xl', 'text-2xl', 'text-3xl', 'text-4xl');
-		mainTitle.classList.add(sizeClasses[size][2]);
-
-		return { success: true, size };
-	}
-
-	// Helper functions for AI commands
-	const uiFunctions = {
-		changeBackgroundColor: (color) => applyBackgroundColor(color),
-		changeTextColor: (color) => applyTextColor(color),
-		changeButtonColor: (colorName) => applyButtonColor(colorName),
-		changeTextSize: (size) => applyTextSize(size)
-	};
-
-	// Toggle customization panel
-	toggleCustomizationButton.addEventListener('click', () => {
-		customizationPanel.classList.toggle('hidden');
-	});
-
-	// Set up color pickers
-	bgColorPicker.addEventListener('input', (e) => {
-		applyBackgroundColor(e.target.value);
-	});
-
-	textColorPicker.addEventListener('input', (e) => {
-		applyTextColor(e.target.value);
-	});
-
-	// Set up color buttons
-	document.querySelectorAll('[data-color]').forEach(button => {
-		button.addEventListener('click', () => {
-			const color = button.getAttribute('data-color');
-			const parent = button.closest('div').parentElement;
-
-			if (parent.querySelector('label').textContent.includes('Background')) {
-				bgColorPicker.value = color;
-				applyBackgroundColor(color);
-			} else if (parent.querySelector('label').textContent.includes('Text Color')) {
-				textColorPicker.value = color;
-				applyTextColor(color);
-			} else if (parent.querySelector('label').textContent.includes('Button')) {
-				applyButtonColor(color);
-			}
-		});
-	});
-
-	// Set up text size buttons
-	document.querySelectorAll('[data-size]').forEach(button => {
-		button.addEventListener('click', () => {
-			const size = button.getAttribute('data-size');
-			applyTextSize(size);
-		});
-	});
 
 	// Create a message element to add to the conversation
 	function addMessage(text, isUser = false) {
+		if (!text || text.trim() === '') return; // Don't add empty messages
+		
 		const messageEl = document.createElement('div');
 		messageEl.className = isUser
 			? 'bg-blue-100 p-3 rounded-lg ml-auto max-w-[80%]'
@@ -156,78 +66,25 @@ document.addEventListener('DOMContentLoaded', () => {
 			const event = {
 				type: 'session.update',
 				session: {
-					modalities: ['text', 'audio'],
-					tools: [
-						{
-							type: 'function',
-							name: 'changeBackgroundColor',
-							description: 'Changes the background color of the interface',
-							parameters: {
-								type: 'object',
-								properties: {
-									color: { type: 'string', description: 'Color value (hex code or color name)' },
-								},
-								required: ['color']
-							}
-						},
-						{
-							type: 'function',
-							name: 'changeTextColor',
-							description: 'Changes the text color of the interface',
-							parameters: {
-								type: 'object',
-								properties: {
-									color: { type: 'string', description: 'Color value (hex code or color name)' },
-								},
-								required: ['color']
-							}
-						},
-						{
-							type: 'function',
-							name: 'changeButtonColor',
-							description: 'Changes the button color of the interface',
-							parameters: {
-								type: 'object',
-								properties: {
-									colorName: {
-										type: 'string',
-										enum: ['blue', 'green', 'purple', 'red', 'yellow'],
-										description: 'Color name (blue, green, purple, red, yellow)'
-									},
-								},
-								required: ['colorName']
-							}
-						},
-						{
-							type: 'function',
-							name: 'changeTextSize',
-							description: 'Changes the text size of the interface',
-							parameters: {
-								type: 'object',
-								properties: {
-									size: {
-										type: 'string',
-										enum: ['small', 'medium', 'large'],
-										description: 'Text size (small, medium, large)'
-									},
-								},
-								required: ['size']
-							}
-						}
-					]
+					modalities: ['text', 'audio']
 				}
 			};
 			dataChannel.send(JSON.stringify(event));
 			statusDiv.textContent = 'Connected! You can speak now.';
-			addMessage('Hello! How can I help you today? You can ask me to change colors and text size.', false);
+			const greeting = 'Hello! How can I help you today?';
+			addMessage(greeting, false);
+			addToLog('AI', greeting);
 		});
 
 		// Variables to track conversation state
 		let currentResponseId = null;
 		let currentMessageElement = null;
+		let accumulatedResponse = '';
+		let lastUserMessage = ''; // Track last user message to avoid duplicates
 
 		// Clear any previous conversation
 		conversationDiv.innerHTML = '';
+		logTableBody.innerHTML = '';
 
 		// Handle incoming messages
 		dataChannel.addEventListener('message', (event) => {
@@ -240,86 +97,70 @@ document.addEventListener('DOMContentLoaded', () => {
 				statusDiv.textContent = 'AI is responding...';
 				statusDiv.className = 'mt-4 text-sm text-green-500 font-medium';
 
-				// Check if this is a new response or continuation
+				// Check if this is a new response
 				if (currentResponseId !== msg.response_id) {
 					currentResponseId = msg.response_id;
 					currentMessageElement = document.createElement('div');
 					currentMessageElement.className = 'bg-gray-100 p-3 rounded-lg max-w-[80%] mb-2';
 					conversationDiv.appendChild(currentMessageElement);
+					accumulatedResponse = '';
 				}
 
 				// Add the text to the current message
 				if (msg.delta && msg.delta.text) {
-					currentMessageElement.textContent += msg.delta.text;
+					accumulatedResponse += msg.delta.text;
+					currentMessageElement.textContent = accumulatedResponse;
 					conversationDiv.scrollTop = conversationDiv.scrollHeight;
 				}
 			}
 
-			// Handle function calls from the AI
-			if (msg.type === 'response.function_call_arguments.done') {
-				console.log(`AI is calling function: ${msg.name} with args: ${msg.arguments}`);
-
-				let result = { success: false, error: 'Function not found' };
-				const args = JSON.parse(msg.arguments);
-
-				// Execute the appropriate function
-				switch(msg.name) {
-					case 'changeBackgroundColor':
-						result = applyBackgroundColor(args.color);
-						break;
-					case 'changeTextColor':
-						result = applyTextColor(args.color);
-						break;
-					case 'changeButtonColor':
-						result = applyButtonColor(args.colorName);
-						break;
-					case 'changeTextSize':
-						result = applyTextSize(args.size);
-						break;
-				}
-
-				// Send the result back to the AI
-				const resultEvent = {
-					type: 'conversation.item.create',
-					item: {
-						type: 'function_call_output',
-						call_id: msg.call_id,
-						output: JSON.stringify(result)
+			// Handle completed output items (including audio transcripts)
+			if (msg.type === 'response.output_item.done') {
+				if (msg.item && msg.item.content && msg.item.content.length > 0) {
+					for (const content of msg.item.content) {
+						if (content.transcript) {
+							// Add AI's message to conversation and log
+							addMessage(content.transcript, false);
+							addToLog('AI', content.transcript);
+						}
 					}
-				};
-				dataChannel.send(JSON.stringify(resultEvent));
-
-				// Ask the AI to continue the conversation
-				dataChannel.send(JSON.stringify({ type: 'response.create' }));
+				}
 			}
 
 			// Handle user transcript (what the user said)
 			if (msg.type === 'transcript.partial' || msg.type === 'transcript.complete') {
-				// Show visual indicator that microphone is active
-				if (msg.type === 'transcript.partial') {
-					statusDiv.textContent = 'Listening...';
-					statusDiv.className = 'mt-4 text-sm text-blue-500 font-medium animate-pulse';
-				} else if (msg.type === 'transcript.complete') {
-					statusDiv.textContent = 'Connected! You can speak now.';
-					statusDiv.className = 'mt-4 text-sm text-gray-500 font-medium';
-				}
-
 				if (msg.transcript && msg.transcript.text) {
-					// Check if there's already a user message with this ID
-					const userMessageId = `user-${msg.transcript_id}`;
-					let userMessage = document.getElementById(userMessageId);
+					const userText = msg.transcript.text;
+					
+					// Show visual indicator that microphone is active
+					if (msg.type === 'transcript.partial') {
+						statusDiv.textContent = 'Listening...';
+						statusDiv.className = 'mt-4 text-sm text-blue-500 font-medium animate-pulse';
+						
+						// Update existing message or create new one for partial
+						const userMessageId = `user-${msg.transcript_id}`;
+						let userMessage = document.getElementById(userMessageId);
 
-					if (!userMessage) {
-						// Create a new user message
-						userMessage = document.createElement('div');
-						userMessage.id = userMessageId;
-						userMessage.className = 'bg-blue-100 p-3 rounded-lg ml-auto max-w-[80%] mb-2';
-						conversationDiv.appendChild(userMessage);
+						if (!userMessage) {
+							userMessage = document.createElement('div');
+							userMessage.id = userMessageId;
+							userMessage.className = 'bg-blue-100 p-3 rounded-lg ml-auto max-w-[80%] mb-2';
+							conversationDiv.appendChild(userMessage);
+						}
+
+						userMessage.textContent = userText;
+						conversationDiv.scrollTop = conversationDiv.scrollHeight;
+					} else if (msg.type === 'transcript.complete') {
+						statusDiv.textContent = 'Connected! You can speak now.';
+						statusDiv.className = 'mt-4 text-sm text-gray-500 font-medium';
+						
+						// Only log if it's a new message (avoid duplicates)
+						if (userText !== lastUserMessage) {
+							addMessage(userText, true);
+							addToLog('User', userText);
+							lastUserMessage = userText;
+						}
 					}
-
-					// Update the message text
-					userMessage.textContent = msg.transcript.text;
-					conversationDiv.scrollTop = conversationDiv.scrollHeight;
 				}
 			}
 		});

@@ -12,18 +12,7 @@ const OPENAI_API_KEY="sk-proj-IAWGfFimiUZ8FjWTrOFMSTA8AxsWvu6hc4_igh46jSxZo6OJrp
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
-const DEFAULT_INSTRUCTIONS = `You are a helpful AI voice assistant with UI customization capabilities. Respond to the user in a friendly, conversational manner. You can help with information, answer questions, or just chat.
-
-You have access to the following tools to customize the user interface:
-1. changeBackgroundColor - Changes the background color (accepts color names or hex codes like #ffffff)
-2. changeTextColor - Changes the text color (accepts color names or hex codes like #000000)
-3. changeButtonColor - Changes the button color (accepts: blue, green, purple, red, yellow)
-4. changeTextSize - Changes the text size (accepts: small, medium, large)
-
-If the user asks you to change colors or text size, use these tools to help them. For example, if they ask for a blue background, call the changeBackgroundColor function with the appropriate color.
-
-Keep your responses concise and engaging.
-`;
+const DEFAULT_INSTRUCTIONS = `You are a helpful AI voice assistant. Your role is to answer questions and provide information in a friendly, conversational manner. Keep your responses concise and clear. Focus on providing accurate and helpful answers to the user's questions.`;
 
 app.get('/session', async (req, res) => {
   try {
