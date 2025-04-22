@@ -93,7 +93,11 @@ document.addEventListener('DOMContentLoaded', () => {
 			const event = {
 				type: 'session.update',
 				session: {
-					modalities: ['text', 'audio']
+					modalities: ['text', 'audio'],
+					input_audio_transcription: {               // 👉 turn on transcription
+						model: 'whisper-1'                       // or 'gpt-4o-mini-transcribe'
+					  },
+					  
 				}
 			};
 			dataChannel.send(JSON.stringify(event));
@@ -116,85 +120,145 @@ document.addEventListener('DOMContentLoaded', () => {
 		logTableBody.innerHTML = '';
 
 		// Handle incoming messages
-		dataChannel.addEventListener('message', (event) => {
-			const msg = JSON.parse(event.data);
-			console.log('Received message:', msg);
+		// dataChannel.addEventListener('message', (event) => {
+		// 	const msg = JSON.parse(event.data);
+		// 	console.log('Received message:', msg);
 
-			// Handle text responses
-			if (msg.type === 'response.text.delta') {
-				// Show visual indicator that AI is responding
-				statusDiv.textContent = 'AI is responding...';
-				statusDiv.className = 'mt-4 text-sm text-green-500 font-medium';
+		// 	// Handle text responses
+		// 	if (msg.type === 'response.text.delta') {
+		// 		// Show visual indicator that AI is responding
+		// 		statusDiv.textContent = 'AI is responding...';
+		// 		statusDiv.className = 'mt-4 text-sm text-green-500 font-medium';
 
-				// Check if this is a new response
-				if (currentResponseId !== msg.response_id) {
-					currentResponseId = msg.response_id;
-					currentMessageElement = document.createElement('div');
-					currentMessageElement.className = 'bg-gray-100 p-3 rounded-lg max-w-[80%] mb-2';
-					conversationDiv.appendChild(currentMessageElement);
-					accumulatedResponse = '';
-				}
+		// 		// Check if this is a new response
+		// 		if (currentResponseId !== msg.response_id) {
+		// 			currentResponseId = msg.response_id;
+		// 			currentMessageElement = document.createElement('div');
+		// 			currentMessageElement.className = 'bg-gray-100 p-3 rounded-lg max-w-[80%] mb-2';
+		// 			conversationDiv.appendChild(currentMessageElement);
+		// 			accumulatedResponse = '';
+		// 		}
 
-				// Add the text to the current message
-				if (msg.delta && msg.delta.text) {
-					accumulatedResponse += msg.delta.text;
-					currentMessageElement.textContent = accumulatedResponse;
-					conversationDiv.scrollTop = conversationDiv.scrollHeight;
-				}
-			}
+		// 		// Add the text to the current message
+		// 		if (msg.delta && msg.delta.text) {
+		// 			accumulatedResponse += msg.delta.text;
+		// 			currentMessageElement.textContent = accumulatedResponse;
+		// 			conversationDiv.scrollTop = conversationDiv.scrollHeight;
+		// 		}
+		// 	}
 
-			// Handle completed output items (including audio transcripts)
-			if (msg.type === 'response.output_item.done') {
-				if (msg.item && msg.item.content && msg.item.content.length > 0) {
-					for (const content of msg.item.content) {
-						if (content.transcript) {
-							// Add AI's message to conversation and log
-							addMessage(content.transcript, false);
-							addToLog('AI', content.transcript);
-						}
-					}
-				}
-			}
+		// 	// Handle completed output items (including audio transcripts)
+		// 	if (msg.type === 'response.output_item.done') {
+		// 		if (msg.item && msg.item.content && msg.item.content.length > 0) {
+		// 			for (const content of msg.item.content) {
+		// 				if (content.transcript) {
+		// 					// Add AI's message to conversation and log
+		// 					addMessage(content.transcript, false);
+		// 					addToLog('AI', content.transcript);
+		// 				}
+		// 			}
+		// 		}
+		// 	}
 
-			// Handle user transcript (what the user said)
-			if (msg.type === 'transcript.partial' || msg.type === 'transcript.complete') {
-				if (msg.transcript && msg.transcript.text) {
-					const userText = msg.transcript.text;
+		// 	// Handle user transcript (what the user said)
+		// 	if (msg.type === 'transcript.partial' || msg.type === 'transcript.complete') {
+		// 		if (msg.transcript && msg.transcript.text) {
+		// 			const userText = msg.transcript.text;
 					
-					// Show visual indicator that microphone is active
-					if (msg.type === 'transcript.partial') {
-						statusDiv.textContent = 'Listening...';
-						statusDiv.className = 'mt-4 text-sm text-blue-500 font-medium animate-pulse';
-						updateMicStatus(true, 'Listening...');
+		// 			// Show visual indicator that microphone is active
+		// 			if (msg.type === 'transcript.partial') {
+		// 				statusDiv.textContent = 'Listening...';
+		// 				statusDiv.className = 'mt-4 text-sm text-blue-500 font-medium animate-pulse';
+		// 				updateMicStatus(true, 'Listening...');
 						
-						// Update existing message or create new one for partial
-						const userMessageId = `user-${msg.transcript_id}`;
-						let userMessage = document.getElementById(userMessageId);
+		// 				// Update existing message or create new one for partial
+		// 				const userMessageId = `user-${msg.transcript_id}`;
+		// 				let userMessage = document.getElementById(userMessageId);
 
-						if (!userMessage) {
-							userMessage = document.createElement('div');
-							userMessage.id = userMessageId;
-							userMessage.className = 'message-bubble user-message bg-blue-100 p-3 rounded-lg ml-auto max-w-[80%] mb-4 shadow-sm';
-							conversationDiv.appendChild(userMessage);
-						}
+		// 				if (!userMessage) {
+		// 					userMessage = document.createElement('div');
+		// 					userMessage.id = userMessageId;
+		// 					userMessage.className = 'message-bubble user-message bg-blue-100 p-3 rounded-lg ml-auto max-w-[80%] mb-4 shadow-sm';
+		// 					conversationDiv.appendChild(userMessage);
+		// 				}
 
-						userMessage.textContent = userText;
-						conversationDiv.scrollTop = conversationDiv.scrollHeight;
-					} else if (msg.type === 'transcript.complete') {
-						statusDiv.textContent = 'Connected! You can speak now.';
-						statusDiv.className = 'mt-4 text-sm text-gray-500 font-medium';
-						updateMicStatus(true, 'Microphone active');
+		// 				userMessage.textContent = userText;
+		// 				conversationDiv.scrollTop = conversationDiv.scrollHeight;
+		// 			} else if (msg.type === 'transcript.complete') {
+		// 				statusDiv.textContent = 'Connected! You can speak now.';
+		// 				statusDiv.className = 'mt-4 text-sm text-gray-500 font-medium';
+		// 				updateMicStatus(true, 'Microphone active');
 						
-						// Only log if it's a new message (avoid duplicates)
-						if (userText !== lastUserMessage) {
-							addMessage(userText, true);
-							addToLog('User', userText);
-							lastUserMessage = userText;
-						}
-					}
-				}
-			}
-		});
+		// 				// Only log if it's a new message (avoid duplicates)
+		// 				if (userText !== lastUserMessage) {
+		// 					addMessage(userText, true);
+		// 					addToLog('User', userText);
+		// 					lastUserMessage = userText;
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+		// });
+		
+// Handle incoming messages
+dataChannel.addEventListener('message', (event) => {
+	const msg = JSON.parse(event.data);
+	console.log('Received message:', msg);
+  
+	//
+	// ─── 1) USER SPOKEN TEXT arrives as conversation.item.created ──────
+	//
+	if (msg.type === 'conversation.item.created'
+		&& msg.item.role === 'user'
+		&& Array.isArray(msg.item.content)) {
+	  // loop in case there are multiple content entries
+	  for (const content of msg.item.content) {
+		if (content.transcript) {
+		  // 1a) show it in the chat
+		  addMessage(content.transcript, true);
+		  // 1b) log it in the table
+		  addToLog('User', content.transcript);
+		}
+	  }
+	  // stop here—don’t treat it as an AI reply
+	  return;
+	}
+  
+	//
+	// ─── 2) AI STREAMED TEXT DELTAS ─────────────────────────────────────
+	//
+	if (msg.type === 'response.text.delta') {
+	  statusDiv.textContent = 'AI is responding…';
+	  statusDiv.className = 'mt-4 text-sm text-green-500 font-medium';
+  
+	  if (currentResponseId !== msg.response_id) {
+		currentResponseId = msg.response_id;
+		currentMessageElement = document.createElement('div');
+		currentMessageElement.className = 'bg-gray-100 p-3 rounded-lg max-w-[80%] mb-2';
+		conversationDiv.appendChild(currentMessageElement);
+		accumulatedResponse = '';
+	  }
+  
+	  if (msg.delta && msg.delta.text) {
+		accumulatedResponse += msg.delta.text;
+		currentMessageElement.textContent = accumulatedResponse;
+		conversationDiv.scrollTop = conversationDiv.scrollHeight;
+	  }
+	}
+  
+	//
+	// ─── 3) AI AUDIO TRANSCRIPTS ────────────────────────────────────────
+	//
+	if (msg.type === 'response.output_item.done' && msg.item && Array.isArray(msg.item.content)) {
+	  for (const content of msg.item.content) {
+		if (content.transcript) {
+		  addMessage(content.transcript, false);
+		  addToLog('AI', content.transcript);
+		}
+	  }
+	}
+  });
+  
 
 		// Capture microphone
 		navigator.mediaDevices.getUserMedia({ audio: true })
