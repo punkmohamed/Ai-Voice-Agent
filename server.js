@@ -2,12 +2,21 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const OPENAI_API_KEY="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"
+
+// Check if API key is available
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+console.log(OPENAI_API_KEY,"OPENAI_API_KEY");
+
+
 
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
