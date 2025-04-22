@@ -26,6 +26,25 @@ app.get('/session', async (req, res) => {
         model: "gpt-4o-realtime-preview-2024-12-17",
         instructions: DEFAULT_INSTRUCTIONS,
         voice: "ash",
+        
+        // ── Enable real‑time Whisper transcription ──
+        input_audio_transcription: {
+          model: "gpt-4o-mini-transcribe"
+        }, /// gpt-4o-mini-transcribe
+         // ── (Optional) make sure your audio codec is registered ──
+         input_audio_format: "pcm16",
+         output_audio_format: "pcm16",
+ 
+         // ── (Optional) server‑side VAD turn detection ──
+         turn_detection: {
+           type: "server_vad",
+           threshold: 0.5,
+           prefix_padding_ms: 300,
+           silence_duration_ms: 200,
+           create_response: true,
+           interrupt_response: true
+         },
+ 
       }),
     });
     const result = await response.json();
